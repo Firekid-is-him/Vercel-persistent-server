@@ -3,26 +3,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (req.headers["x-bridge-secret"] !== process.env.BRIDGE_SECRET) {
+  const bridgeSecret = process.env.BRIDGE_SECRET;
+  if (req.headers["x-bridge-secret"] !== bridgeSecret) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   const payload = req.body;
   const { source } = payload;
 
-  if (source === "discord") {
-    return handleDiscord(payload, res);
-  }
-
-  if (source === "whatsapp") {
-    return handleWhatsApp(payload, res);
-  }
+  if (source === "discord") return handleDiscord(payload, res);
+  if (source === "whatsapp") return handleWhatsApp(payload, res);
+  if (source === "cron") return handleCron(payload, res);
 
   return res.status(400).json({ error: "Unknown source" });
 }
 
 async function handleDiscord(payload, res) {
-  const { t: eventType, data } = payload;
+  const eventType = payload.t;
+  const data = payload.d;
+  const tenant = payload.tenant;
 
   if (eventType === "INTERACTION_CREATE") {
     const commandName = data?.data?.name;
@@ -57,6 +56,16 @@ async function handleWhatsApp(payload, res) {
 
   if (text === "ping") {
     await sendWhatsAppMessage(remoteJid, "Pong!");
+  }
+
+  return res.json({ ok: true });
+}
+
+async function handleCron(payload, res) {
+  const { jobId } = payload;
+
+  if (jobId === "daily-report") {
+    // run your scheduled task here
   }
 
   return res.json({ ok: true });
