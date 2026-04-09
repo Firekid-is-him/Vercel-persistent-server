@@ -6,15 +6,7 @@ services:
     buildCommand: npm install
     startCommand: npm start
     envVars:
-      - key: DISCORD_TOKENS
-        sync: false
-      - key: BRIDGE_SECRET
-        sync: false
-      - key: ADMIN_SECRET
-        sync: false
       - key: UPSTASH_URL
         sync: false
       - key: UPSTASH_TOKEN
         sync: false
-      - key: WA_ENABLED
-        value: false
