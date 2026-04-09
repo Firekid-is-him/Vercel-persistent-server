@@ -1,18 +1,16 @@
 # Getting Started
 
-Vercel Server is a persistent bridge that runs on Render and forwards events from Discord and WhatsApp to your Vercel-hosted bot logic. You deploy the bridge once and never touch it again. Every new bot you build is a separate Vercel project.
+Vercel Server is a persistent bridge that runs on Render and forwards events from Discord and WhatsApp to your Vercel-hosted bot logic. You deploy the bridge once. Every new bot you build is a separate Vercel project that connects to the same bridge.
+
+All configuration — secrets, tokens, rules, and settings — is managed through the dashboard and stored in Upstash Redis. The only environment variables you set on Render are your Upstash credentials.
 
 ---
 
 ## Prerequisites
 
-Before deploying, make sure you have the following:
-
 - A [Render](https://render.com) account
 - A [Vercel](https://vercel.com) account
 - An [Upstash](https://upstash.com) account (free tier is sufficient)
-- A Discord bot token (if using Discord)
-- Node.js 18 or later (for local development only)
 
 ---
 
@@ -20,65 +18,98 @@ Before deploying, make sure you have the following:
 
 1. Log in to [Upstash](https://console.upstash.com)
 2. Click **Create Database**
-3. Choose a name, select a region closest to your Render region, and click **Create**
-4. From the database dashboard, copy the **REST URL** and **REST Token** — you will need these in the next step
+3. Choose a name, select a region closest to your Render deployment region, and click **Create**
+4. From the database dashboard, copy the **REST URL** and **REST Token**
 
 ---
 
 ## Step 2 — Deploy the Bridge on Render
 
 1. Go to [Render](https://dashboard.render.com) and click **New > Web Service**
-2. Select **Public Git Repository** and paste the following URL:
+2. Select **Public Git Repository** and paste:
 
    ```
    https://github.com/Firekid-is-him/Vercel-persistent-server
    ```
 
-3. Render will detect the `render.yaml` file automatically and configure the service
-4. Fill in the required environment variables when prompted:
+3. Render will detect `render.yaml` automatically
+4. Set the following environment variables when prompted:
 
    | Variable | Description |
    |---|---|
-   | `DISCORD_TOKENS` | Comma-separated list of Discord bot tokens |
-   | `BRIDGE_SECRET` | A strong random string shared with your Vercel bots |
-   | `ADMIN_SECRET` | A separate strong random string for managing routes |
    | `UPSTASH_URL` | REST URL from your Upstash database |
    | `UPSTASH_TOKEN` | REST Token from your Upstash database |
-   | `WA_ENABLED` | Set to `true` to enable WhatsApp, leave as `false` otherwise |
 
-5. Click **Deploy**. Once the deploy finishes, copy your Render service URL — you will need it when registering routes
-
-> Generate `BRIDGE_SECRET` and `ADMIN_SECRET` using a password manager or by running `openssl rand -hex 32` in your terminal. They must be different values.
+5. Click **Deploy** and wait for the service to go live
+6. Copy your Render service URL — you will need it in the next step
 
 ---
 
-## Step 3 — Deploy Your Bot on Vercel
+## Step 3 — Initial Setup
 
-1. Copy the contents of the `vercel-bot-template/` folder into a new project
-2. Push it to a GitHub repository
-3. Import the repository into Vercel
-4. Add the following environment variables in the Vercel project settings:
+Once the bridge is live, you must configure your admin and bridge secrets before anything else works. Send this request once:
+
+```bash
+curl -X POST https://your-bridge.onrender.com/setup \
+  -H "x-setup-token: YOUR_UPSTASH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"adminSecret":"your_admin_secret","bridgeSecret":"your_bridge_secret"}'
+```
+
+- `x-setup-token` must be your raw Upstash token — this is the only time it is used as auth
+- `adminSecret` — a strong random string you will use to manage the bridge
+- `bridgeSecret` — a strong random string shared with all your Vercel bots
+
+Generate both using `openssl rand -hex 32`. They must be different values. After this call succeeds, the setup endpoint is permanently disabled.
+
+---
+
+## Step 4 — Configure via Dashboard
+
+Visit your dashboard at:
+
+```
+https://your-bridge.onrender.com/dashboard
+```
+
+From here you can configure Discord tokens, WhatsApp, cron jobs, rate limits, IP whitelist, health monitor alerts, and everything else. All settings save to Redis instantly.
+
+---
+
+## Step 5 — Deploy Your Bot on Vercel
+
+1. Copy the `vercel-bot-template/` folder into a new repository
+2. Push it to GitHub and import into Vercel
+3. Add the following environment variables in Vercel project settings:
 
    | Variable | Description |
    |---|---|
-   | `BRIDGE_SECRET` | The same value you set on Render |
-   | `DISCORD_BOT_TOKEN` | The token for this specific bot (Discord only) |
+   | `BRIDGE_SECRET` | The bridge secret you set in Step 3 |
+   | `DISCORD_BOT_TOKEN` | Your Discord bot token (Discord bots only) |
+   | `BRIDGE_URL` | Your Render bridge URL (WhatsApp bots only) |
 
-5. Deploy the project and copy the Vercel deployment URL
+4. Deploy and copy the Vercel URL
 
 ---
 
-## Step 4 — Register a Route
+## Step 6 — Register a Route
 
-Once both the bridge and your Vercel bot are live, you need to tell the bridge where to forward events.
-
-See [Adding Routes](./adding-routes.md) for the full guide.
+Tell the bridge where to forward events for your server or WhatsApp number. See [Adding Routes](./adding-routes.md).
 
 ---
 
 ## Next Steps
 
+- [Adding Routes](./adding-routes.md)
 - [Discord Bot Guide](./discord.md)
 - [WhatsApp Bot Guide](./whatsapp.md)
+- [Cron Jobs](./cron.md)
+- [WebSocket Relay](./websocket.md)
+- [File Uploads](./file-uploads.md)
+- [Rate Limiting](./rate-limiting.md)
+- [Event Logger](./event-logger.md)
+- [Multi-Tenant](./multi-tenant.md)
+- [IP Whitelist](./ip-whitelist.md)
+- [Health Monitor](./health-monitor.md)
 - [Payment Webhooks](./payments.md)
 - [Using Chromium on Vercel](./chromium.md)
