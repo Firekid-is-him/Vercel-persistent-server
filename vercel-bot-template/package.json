@@ -1,0 +1,11 @@
+{
+  "name": "vercel-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "discord-api-types": "^0.37.97"
+  }
+}
