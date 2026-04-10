@@ -320,14 +320,15 @@ app.post("/wa/send", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/setup", async (req, res) => {
-  if (req.headers["x-setup-token"] !== process.env.UPSTASH_TOKEN) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+app.get("/dashboard/status", async (_req, res) => {
+  const adminSecret = await getSecret("admin_secret");
+  res.json({ configured: !!adminSecret });
+});
 
+app.post("/setup", async (req, res) => {
   const existing = await getSecret("admin_secret");
   if (existing) {
-    return res.status(400).json({ error: "Already configured. Use dashboard." });
+    return res.status(400).json({ error: "Already configured." });
   }
 
   const { adminSecret, bridgeSecret } = req.body;
