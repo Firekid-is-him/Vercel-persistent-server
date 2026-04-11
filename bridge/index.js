@@ -168,8 +168,7 @@ async function startDiscord() {
     return;
   }
 
-  const tokens = JSON.parse(tokensRaw);
-
+  const tokens = Array.isArray(tokensRaw) ? tokensRaw : JSON.parse(tokensRaw);
   for (const token of tokens) {
     const rest = new REST({ version: "10" }).setToken(token);
 
